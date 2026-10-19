@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Find Doctors — Marham Health{% endblock %}
+
+{% block content %}
+<div style="background: #FFFFFF; border-bottom: 1px solid var(--border); padding: 24px 0;">
+    <div style="max-width: 1240px; margin: 0 auto; padding: 0 20px;">
+        <h1 style="font-size: 1.8rem; margin-bottom: 16px;">
+            {% if selected_specialty %}
+                {{ selected_specialty }}s
+            {% else %}
+                All Certified Doctors
+            {% endif %}
+            {% if selected_city %}
+                in {{ selected_city }}
+            {% else %}
+                in Pakistan
+            {% endif %}
+        </h1>
+
+        <!-- Filter Bar -->
+        <form action="{{ url_for('doctors_list') }}" method="GET" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+            <!-- City -->
+            <select name="city" class="form-control" style="width: auto; min-width: 180px;">
+                <option value="">All Cities</option>
+                {% for c in cities %}
+                    <option value="{{ c }}" {% if selected_city == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Specialty -->
+            <select name="specialty" class="form-control" style="width: auto; min-width: 200px;">
+                <option value="">All Specialities</option>
+                {% for s in specialties %}
+                    <option value="{{ s.name }}" {% if selected_specialty == s.name %}selected{% endif %}>{{ s.name }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Text Search -->
+            <input type="text" name="q" class="form-control" placeholder="Search doctor or clinic name..." value="{{ search_query }}" style="flex: 1; min-width: 240px;">
+
+            <button type="submit" class="btn btn-primary">Filter Results</button>
+            <a href="{{ url_for('doctors_list') }}" class="btn btn-outline">Reset</a>
+        </form>
+    </div>
+</div>
+
+<div class="content-wrapper">
+    <div style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.92rem;">
+        Showing <strong>{{ doctors|length }}</strong> verified specialists matching your criteria
+    </div>
+
+    {% if doctors %}
+        <div class="doctor-grid">
+            {% for doc in doctors %}
+                <div class="doctor-card">
+                    <div class="doctor-header">
+                        <div class="doctor-avatar">👨‍⚕️</div>
+                        <div class="doctor-info">
+                            <div class="badge badge-pmdc" style="margin-bottom: 6px;">
+                                ✓ {{ doc.license_no }}
+                            </div>
+                            <h3 class="doctor-name">
+                                <a href="{{ url_for('doctor_profile', doctor_id=doc.doctor_id) }}">
+                                    {{ doc.doctor_name }}
+                                </a>
+                            </h3>
+                            <div class="doctor-spec">{{ doc.specialization_name }}</div>
+                            <div class="doctor-qual">{{ doc.qualification }}</div>
+                        </div>
+                    </div>
+
+                    <div class="doctor-meta-bar">
+                        <div class="meta-item">
+                            <span>⭐</span> <strong>4.9</strong> (150+ reviews)
+                        </div>
+                        <div class="meta-item">
+                            <span>📍</span> <strong>{{ doc.city or 'Pakistan' }}</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>🕒</span> <strong>{{ doc.available_slots_count or 4 }}</strong> Slots
+                        </div>
+                    </div>
+
+                    <div class="doctor-locations-list">
+                        <div class="loc-pill">
+                            <span>🏥</span>
+                            <div>
+                                <strong>{{ doc.location_name or 'Main Clinic' }}</strong>
+                                {% if doc.city %}
+                                    <span class="city">{{ doc.city }}</span>
+                                {% endif %}
+                                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 1px;">
+                                    {{ doc.address or 'Medical Center' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="doctor-card-footer">
+                        <div class="fee-display">
+                            <span class="fee-label">Consultation Fee</span>
+                            <span class="fee-amount">Rs. 2,500</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <a href="{{ url_for('doctor_profile', doctor_id=doc.doctor_id) }}" class="btn btn-outline btn-sm">
+                                Profile
+                            </a>
+                            <button type="button" class="btn btn-accent btn-sm" 
+                                    onclick="openBookingModal({{ doc.doctor_id }}, '{{ doc.doctor_name|replace("'", "\\'") }}', '{{ doc.specialization_name }}', {{ doc.doctor_location_id or 0 }}, '{{ (doc.location_name or "")|replace("'", "\\'") }}')">
+                                Book Appointment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 60px 20px; background: #FFFFFF; border-radius: var(--radius-md); border: 1px dashed var(--border);">
+            <div style="font-size: 3rem; margin-bottom: 12px;">🔍</div>
+            <h3 style="margin-bottom: 8px;">No doctors found matching your criteria</h3>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Try clearing your filters or selecting "All Cities" to broaden your search.</p>
+            <a href="{{ url_for('doctors_list') }}" class="btn btn-primary">View All Available Doctors</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

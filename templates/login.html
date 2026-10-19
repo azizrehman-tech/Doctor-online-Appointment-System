@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — Marham Health{% endblock %}
+
+{% block content %}
+<div class="content-wrapper" style="max-width: 520px; padding: 48px 20px;">
+    <div style="background: #FFFFFF; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 36px; box-shadow: var(--shadow-md);">
+        
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div class="logo-badge" style="margin: 0 auto 12px; width: 48px; height: 48px; font-size: 1.6rem;">M</div>
+            <h2 style="font-size: 1.6rem; color: var(--dark); margin-bottom: 4px;">Sign In to Marham Health</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Select your user role to continue</p>
+        </div>
+
+        <!-- Role Selector Tabs -->
+        <div style="display: flex; background: var(--bg-page); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 24px;">
+            <button type="button" class="btn btn-sm {% if active_role == 'patient' %}btn-primary{% else %}btn-outline{% endif %}" style="flex: 1;" onclick="setLoginRole('patient')">
+                👤 Patient
+            </button>
+            <button type="button" class="btn btn-sm {% if active_role == 'doctor' %}btn-primary{% else %}btn-outline{% endif %}" style="flex: 1;" onclick="setLoginRole('doctor')">
+                🩺 Doctor
+            </button>
+            <button type="button" class="btn btn-sm {% if active_role == 'admin' %}btn-primary{% else %}btn-outline{% endif %}" style="flex: 1;" onclick="setLoginRole('admin')">
+                ⚙️ Admin
+            </button>
+        </div>
+
+        <!-- Login Form -->
+        <form method="POST" action="{{ url_for('login_view') }}">
+            <input type="hidden" name="role" id="login-role-input" value="{{ active_role }}">
+
+            <div class="form-group">
+                <label class="form-label">Email Address:</label>
+                <input type="email" name="email" id="login-email" class="form-control" placeholder="name@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password:</label>
+                <input type="password" name="password" id="login-password" class="form-control" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn btn-accent btn-lg" style="width: 100%; margin-top: 8px;">
+                Sign In
+            </button>
+        </form>
+
+        <!-- Quick 1-Click Fill Demo Credentials for Evaluator -->
+        <div style="margin-top: 24px; padding-top: 18px; border-top: 1px dashed var(--border); text-align: center;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">
+                Quick Autofill Test Accounts
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="autofill('patient', 'hamza.ahmed@gmail.com', 'admin123')">
+                    Fill as Patient (Hamza Ahmed)
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="autofill('doctor', 'dr.atiq@marhamhealth.pk', 'admin123')">
+                    Fill as Doctor (Dr. Atiq Ur Rehman)
+                </button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="autofill('admin', 'admin@marhamhealth.pk', 'admin123')">
+                    Fill as System Admin
+                </button>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 0.88rem; color: var(--text-muted);">
+            Don't have an account yet? 
+            <a href="{{ url_for('register_view', role=active_role) }}" style="font-weight: 600; color: var(--primary);">Create Account</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function setLoginRole(role) {
+    document.getElementById("login-role-input").value = role;
+    location.href = `/login?role=${role}`;
+}
+
+function autofill(role, email, pass) {
+    document.getElementById("login-role-input").value = role;
+    document.getElementById("login-email").value = email;
+    document.getElementById("login-password").value = pass;
+}
+</script>
+{% endblock %}

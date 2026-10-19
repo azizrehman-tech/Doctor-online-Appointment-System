@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Portal — My Appointments | Marham Health{% endblock %}
+
+{% block content %}
+<div class="portal-container">
+    <!-- Sidebar -->
+    <aside class="portal-sidebar">
+        <div class="user-profile-summary">
+            <div class="profile-avatar-circle">👤</div>
+            <h3 style="font-size: 1.15rem; margin-bottom: 2px;">{{ patient.name }}</h3>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">{{ patient.email }}</div>
+            <span class="badge" style="background: #E0F2FE; color: #0284C7; font-weight: 700;">Verified Patient</span>
+        </div>
+
+        <ul class="portal-nav">
+            <li><a href="{{ url_for('patient_portal') }}" class="active">📅 My Appointments</a></li>
+            <li><a href="{{ url_for('doctors_list') }}">🔍 Find Doctors</a></li>
+            <li><a href="{{ url_for('logout') }}" style="color: var(--accent);">🚪 Sign Out</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Portal Content -->
+    <main class="portal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+                <h2 style="font-size: 1.5rem; color: var(--dark);">My Consultation Appointments</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">View, track, or cancel your upcoming clinic consultations</p>
+            </div>
+            <a href="{{ url_for('doctors_list') }}" class="btn btn-primary btn-sm">+ Book New Appointment</a>
+        </div>
+
+        <!-- Appointments List -->
+        {% if appointments %}
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Doctor & Speciality</th>
+                            <th>Clinic & Location</th>
+                            <th>Date & Time</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in appointments %}
+                            <tr>
+                                <td><strong>#{{ appt.appointment_id }}</strong></td>
+                                <td>
+                                    <div style="font-weight: 700; color: var(--primary);">{{ appt.doctor_name }}</div>
+                                    <small style="color: var(--text-muted);">{{ appt.specialization_name }}</small>
+                                </td>
+                                <td>
+                                    <div>{{ appt.location_name }}</div>
+                                    <small class="badge" style="background: #F1F5F9; color: #475569;">{{ appt.city }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ appt.slot_date }}</strong>
+                                    <div style="font-size: 0.82rem; color: var(--text-muted);">{{ appt.start_time[:5] }} - {{ appt.end_time[:5] }}</div>
+                                </td>
+                                <td style="max-width: 200px; font-size: 0.85rem; color: var(--text-muted);">
+                                    {{ appt.reason }}
+                                </td>
+                                <td>
+                                    {% if appt.status == 'Confirmed' %}
+                                        <span class="badge badge-available">Confirmed</span>
+                                    {% elif appt.status == 'Cancelled' %}
+                                        <span class="badge badge-danger">Cancelled</span>
+                                    {% else %}
+                                        <span class="badge badge-pending">{{ appt.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if appt.status == 'Confirmed' %}
+                                        <button type="button" class="btn btn-outline btn-sm" style="color: var(--accent); border-color: #FECACA;" 
+                                                onclick="cancelAppointment({{ appt.appointment_id }})">
+                                            Cancel
+                                        </button>
+                                    {% else %}
+                                        <span style="color: var(--text-light); font-size: 0.82rem;">None</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 50px 20px; background: #F8FAFC; border-radius: var(--radius-md); border: 1px dashed var(--border);">
+                <div style="font-size: 2.5rem; margin-bottom: 12px;">🗓️</div>
+                <h3 style="margin-bottom: 6px;">No Appointments Booked Yet</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">You haven't scheduled any doctor consultations yet.</p>
+                <a href="{{ url_for('doctors_list') }}" class="btn btn-primary">Find a Doctor & Book Now</a>
+            </div>
+        {% endif %}
+    </main>
+</div>
+{% endblock %}

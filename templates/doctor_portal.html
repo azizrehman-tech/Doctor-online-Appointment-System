@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Dashboard — {{ doctor.name }} | Marham Health{% endblock %}
+
+{% block content %}
+<div class="portal-container">
+    <!-- Sidebar -->
+    <aside class="portal-sidebar">
+        <div class="user-profile-summary">
+            <div class="profile-avatar-circle" style="background: linear-gradient(135deg, var(--accent), #E11D48);">🩺</div>
+            <h3 style="font-size: 1.15rem; margin-bottom: 2px;">{{ doctor.name }}</h3>
+            <div style="font-size: 0.82rem; color: var(--primary); font-weight: 700; margin-bottom: 4px;">{{ doctor.specialization_name }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">{{ doctor.license_no }}</div>
+            
+            {% if doctor.status == 'Approved' %}
+                <span class="badge badge-available">✓ PMDC Approved</span>
+            {% else %}
+                <span class="badge badge-pending">⏳ Status: {{ doctor.status }}</span>
+            {% endif %}
+        </div>
+
+        <ul class="portal-nav">
+            <li><a href="#appointments" class="active">📋 Patient Roster</a></li>
+            <li><a href="#locations">🏥 Clinic Locations</a></li>
+            <li><a href="#schedules">⏰ Weekly Schedules</a></li>
+            <li><a href="#generator">⚡ Slot Generator</a></li>
+            <li><a href="{{ url_for('logout') }}" style="color: var(--accent);">🚪 Sign Out</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="portal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+                <h2 style="font-size: 1.5rem; color: var(--dark);">Consultant Doctor Console</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Manage clinic locations, weekly schedules, and patient consultation bookings</p>
+            </div>
+            <a href="{{ url_for('doctor_profile', doctor_id=doctor.doctor_id) }}" class="btn btn-outline btn-sm" target="_blank">
+                View Public Profile ↗
+            </a>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📅</div>
+                <div>
+                    <div class="stat-val">{{ appointments|length }}</div>
+                    <div class="stat-lbl">Total Appointments</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🏥</div>
+                <div>
+                    <div class="stat-val">{{ doctor.locations|length }}</div>
+                    <div class="stat-lbl">Active Clinics</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div>
+                    <div class="stat-val">4.9</div>
+                    <div class="stat-lbl">Patient Rating</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 1: Patient Appointments Roster -->
+        <section id="appointments" style="margin-bottom: 36px;">
+            <h3 style="font-size: 1.25rem; margin-bottom: 14px; color: var(--dark);">Patient Appointment Bookings</h3>
+            {% if appointments %}
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Appt ID</th>
+                                <th>Patient Name</th>
+                                <th>Contact</th>
+                                <th>Location</th>
+                                <th>Date & Time</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in appointments %}
+                                <tr>
+                                    <td><strong>#{{ a.appointment_id }}</strong></td>
+                                    <td>
+                                        <div style="font-weight: 700;">{{ a.patient_name }}</div>
+                                        <small style="color: var(--text-muted);">{{ a.gender or 'N/A' }}</small>
+                                    </td>
+                                    <td>
+                                        <div>{{ a.patient_phone or 'No phone' }}</div>
+                                        <small style="color: var(--text-muted);">{{ a.patient_email }}</small>
+                                    </td>
+                                    <td>
+                                        <div>{{ a.location_name }}</div>
+                                        <small class="badge" style="background:#F1F5F9; color:#475569;">{{ a.city }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ a.slot_date }}</strong>
+                                        <div style="font-size:0.82rem; color:var(--text-muted);">{{ a.start_time[:5] }} - {{ a.end_time[:5] }}</div>
+                                    </td>
+                                    <td style="max-width: 180px; font-size: 0.85rem;">{{ a.reason }}</td>
+                                    <td>
+                                        {% if a.status == 'Confirmed' %}
+                                            <span class="badge badge-available">Confirmed</span>
+                                        {% elif a.status == 'Cancelled' %}
+                                            <span class="badge badge-danger">Cancelled</span>
+                                        {% else %}
+                                            <span class="badge badge-pending">{{ a.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div style="padding: 24px; background: #F8FAFC; border-radius: 8px; text-align: center; color: var(--text-muted);">
+                    No patient bookings scheduled at this time.
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- Section 2: Hospital Locations & Add Location Form -->
+        <section id="locations" style="margin-bottom: 36px; padding-top: 20px; border-top: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="font-size: 1.25rem; color: var(--dark);">Practicing Hospital & Clinic Locations</h3>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 24px;">
+                {% for loc in doctor.locations %}
+                    <div style="border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; background: var(--bg-page);">
+                        <h4 style="color: var(--primary); margin-bottom: 4px;">{{ loc.location_name }}</h4>
+                        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">📍 {{ loc.address }}, {{ loc.city }}</div>
+                        <div style="font-size: 0.82rem; color: var(--text-muted);">📞 {{ loc.contact_no or 'No phone' }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Form: Add Practice Location -->
+            <div style="background: #F8FAFC; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px;">
+                <h4 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--primary);">+ Add New Practice Location</h4>
+                <form id="add-location-form" onsubmit="submitNewLocation(event)">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                        <input type="text" name="location_name" class="form-control" placeholder="Hospital or Clinic Name" required>
+                        <input type="text" name="address" class="form-control" placeholder="Street Address" required>
+                        <input type="text" name="city" class="form-control" placeholder="City (e.g. Lahore, Karachi)" required>
+                        <input type="text" name="contact_no" class="form-control" placeholder="Clinic Contact Phone">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Practice Location</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Section 3: Weekly Schedule Configurator -->
+        <section id="schedules" style="margin-bottom: 36px; padding-top: 20px; border-top: 1px solid var(--border);">
+            <h3 style="font-size: 1.25rem; margin-bottom: 16px; color: var(--dark);">Configure Weekly Schedule</h3>
+            <div style="background: #F8FAFC; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px;">
+                <form id="add-schedule-form" onsubmit="submitNewSchedule(event)">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                        <div>
+                            <label class="form-label">Location:</label>
+                            <select name="doctor_location_id" class="form-control" required>
+                                {% for loc in doctor.locations %}
+                                    <option value="{{ loc.doctor_location_id }}">{{ loc.location_name }} ({{ loc.city }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Day of Week:</label>
+                            <select name="day_of_week" class="form-control" required>
+                                <option value="Monday">Monday</option>
+                                <option value="Tuesday">Tuesday</option>
+                                <option value="Wednesday">Wednesday</option>
+                                <option value="Thursday">Thursday</option>
+                                <option value="Friday">Friday</option>
+                                <option value="Saturday">Saturday</option>
+                                <option value="Sunday">Sunday</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Start Time:</label>
+                            <input type="time" name="start_time" class="form-control" value="09:00" required>
+                        </div>
+                        <div>
+                            <label class="form-label">End Time:</label>
+                            <input type="time" name="end_time" class="form-control" value="13:00" required>
+                        </div>
+                        <div>
+                            <label class="form-label">Slot Duration:</label>
+                            <select name="slot_duration" class="form-control">
+                                <option value="15">15 Minutes</option>
+                                <option value="20" selected>20 Minutes</option>
+                                <option value="30">30 Minutes</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Add Weekly Schedule</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Section 4: Available Slots Generator -->
+        <section id="generator" style="padding-top: 20px; border-top: 1px solid var(--border);">
+            <h3 style="font-size: 1.25rem; margin-bottom: 8px; color: var(--dark);">⚡ Available Slots Generator</h3>
+            <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 16px;">
+                Generate discrete bookable time slots for any specific date based on your weekly schedule.
+            </p>
+            <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-md); padding: 20px;">
+                <form id="generate-slots-form" onsubmit="submitGenerateSlots(event)" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end;">
+                    <div>
+                        <label class="form-label">Select Schedule:</label>
+                        <select name="schedule_id" class="form-control" style="min-width: 260px;" required>
+                            {% for loc in doctor.locations %}
+                                {% for sch in loc.schedules %}
+                                    <option value="{{ sch.schedule_id }}">
+                                        {{ loc.location_name }} — {{ sch.day_of_week }} ({{ sch.start_time[:5] }}-{{ sch.end_time[:5] }})
+                                    </option>
+                                {% endfor %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Target Date:</label>
+                        <input type="date" name="slot_date" class="form-control" value="{{ current_date }}" min="{{ current_date }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-accent btn-sm">Generate Time Slots</button>
+                </form>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function submitNewLocation(e) {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    const res = await fetch("/api/doctor/location/add", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    alert(result.message);
+    if(result.success) location.reload();
+}
+
+async function submitNewSchedule(e) {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    const res = await fetch("/api/doctor/schedule/add", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    alert(result.message);
+    if(result.success) location.reload();
+}
+
+async function submitGenerateSlots(e) {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    const res = await fetch("/api/doctor/slots/generate", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    alert(result.message);
+    if(result.success) location.reload();
+}
+</script>
+{% endblock %}

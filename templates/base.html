@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Marham Health — Find Doctors & Book Appointments Online{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="https://static-new.marham.pk/assets/images/favicon.png">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Top Announcement & Helpline Bar -->
+    <div class="topbar">
+        <div class="topbar-content">
+            <div>
+                <span>🛡️ <strong>100% PMDC/PMC Verified Doctors</strong> &nbsp;|&nbsp; Instant Online & In-Clinic Appointments</span>
+            </div>
+            <div class="topbar-contact">
+                <span>📞 Need assistance? <a href="tel:+924232591427">+92 42 3259 1427</a></span>
+                <span>🏥 Pakistan's Trusted Healthcare Network</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="{{ url_for('index') }}" class="brand-logo">
+                <div class="logo-badge">M</div>
+                <div>
+                    <div class="brand-text">MARHAM<span>HEALTH</span></div>
+                    <div class="brand-subtitle">Doctor Appointment System</div>
+                </div>
+            </a>
+
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Home</a></li>
+                    <li><a href="{{ url_for('doctors_list') }}" class="{% if request.endpoint == 'doctors_list' %}active{% endif %}">Find Doctors</a></li>
+                    <li><a href="{{ url_for('doctors_list', specialty='Dermatologist') }}">Dermatology</a></li>
+                    <li><a href="{{ url_for('doctors_list', specialty='Cardiologist') }}">Cardiology</a></li>
+                    <li><a href="{{ url_for('doctors_list', specialty='Gynecologist') }}">Gynecology</a></li>
+                </ul>
+            </nav>
+
+            <div class="nav-actions">
+                {% if logged_user %}
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        {% if logged_user.role == 'patient' %}
+                            <a href="{{ url_for('patient_portal') }}" class="btn btn-outline btn-sm">
+                                👤 {{ logged_user.name }} (Patient)
+                            </a>
+                        {% elif logged_user.role == 'doctor' %}
+                            <a href="{{ url_for('doctor_portal') }}" class="btn btn-outline btn-sm">
+                                🩺 Dr. {{ logged_user.name }}
+                            </a>
+                        {% elif logged_user.role == 'admin' %}
+                            <a href="{{ url_for('admin_portal') }}" class="btn btn-outline btn-sm">
+                                ⚙️ Admin Console
+                            </a>
+                        {% endif %}
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm" title="Log Out">Sign Out</a>
+                    </div>
+                {% else %}
+                    <!-- Role Switcher & Login -->
+                    <a href="{{ url_for('login_view', role='patient') }}" class="btn btn-outline btn-sm">Login</a>
+                    <a href="{{ url_for('register_view', role='patient') }}" class="btn btn-primary btn-sm">Sign Up</a>
+                    <a href="{{ url_for('login_view', role='doctor') }}" class="btn btn-accent btn-sm">Join as Doctor</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Notifications -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <span>{{ message }}</span>
+                        <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; cursor:pointer; font-weight:bold; color:inherit;">✕</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Page Content -->
+    {% block content %}{% endblock %}
+
+    <!-- Universal Appointment Booking Modal -->
+    <div id="booking-modal" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">Book Doctor Appointment</h3>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">
+                        <span id="modal-doctor-name" style="font-weight: 700; color: var(--primary);">Doctor Name</span> • 
+                        <span id="modal-specialty">Specialty</span>
+                        <span id="modal-location" style="color: var(--accent); font-weight: 600;"></span>
+                    </div>
+                </div>
+                <button type="button" class="modal-close" onclick="closeBookingModal()">✕</button>
+            </div>
+
+            <div id="modal-booking-body" class="modal-body">
+                <form id="appointment-booking-form">
+                    <!-- Date Selector -->
+                    <div class="form-group">
+                        <label class="form-label" for="booking-date-input">📅 Select Appointment Date:</label>
+                        <input type="date" id="booking-date-input" class="form-control" required>
+                    </div>
+
+                    <!-- Time Slots Matrix -->
+                    <div class="form-group">
+                        <label class="form-label">⏰ Select an Available Time Slot:</label>
+                        <div id="slots-container" class="slots-grid">
+                            <!-- Injected dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Patient Info (only if not logged in as patient) -->
+                    {% if not (logged_user and logged_user.role == 'patient') %}
+                        <div style="background: #F1F5F9; border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+                            <div style="font-size: 0.88rem; font-weight: 700; color: var(--dark); margin-bottom: 10px;">Patient Details</div>
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <input type="text" name="patient_name" class="form-control" placeholder="Patient Full Name" required>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <input type="email" name="patient_email" class="form-control" placeholder="Email Address" required>
+                                <input type="tel" name="patient_phone" class="form-control" placeholder="Mobile (+92 3XX XXXXXXX)" required>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Consultation Reason -->
+                    <div class="form-group">
+                        <label class="form-label">Medical Reason or Symptoms:</label>
+                        <textarea name="reason" class="form-control" rows="2" placeholder="Briefly describe your symptoms or reason for visit (e.g. skin rash, chest pain, routine checkup)..." required></textarea>
+                    </div>
+
+                    <button type="submit" id="confirm-booking-btn" class="btn btn-accent btn-lg" style="width: 100%;" disabled>
+                        Select a Time Slot to Continue
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-col">
+                <div class="brand-text" style="color: #FFFFFF; font-size: 1.5rem; margin-bottom: 8px;">
+                    MARHAM<span style="color: #F43F5E;">HEALTH</span>
+                </div>
+                <p style="font-size: 0.88rem; line-height: 1.6; margin-bottom: 16px;">
+                    Pakistan's leading digital doctor appointment and healthcare management system. Connect with verified medical specialists, schedule clinic visits, and manage health records securely.
+                </p>
+                <div style="display: flex; gap: 8px;">
+                    <span class="badge" style="background: #1E293B; color: #38BDF8;">SQL Server DB</span>
+                    <span class="badge" style="background: #1E293B; color: #34D399;">Flask Backend</span>
+                    <span class="badge" style="background: #1E293B; color: #F472B6;">8 Normalized Tables</span>
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h5>Specialties</h5>
+                <ul>
+                    <li><a href="{{ url_for('doctors_list', specialty='Dermatologist') }}">Dermatologists</a></li>
+                    <li><a href="{{ url_for('doctors_list', specialty='Gynecologist') }}">Gynecologists</a></li>
+                    <li><a href="{{ url_for('doctors_list', specialty='Cardiologist') }}">Cardiologists</a></li>
+                    <li><a href="{{ url_for('doctors_list', specialty='Pediatrician') }}">Child Specialists</a></li>
+                    <li><a href="{{ url_for('doctors_list', specialty='Orthopedic Surgeon') }}">Orthopedic Surgeons</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Top Cities</h5>
+                <ul>
+                    <li><a href="{{ url_for('doctors_list', city='Lahore') }}">Doctors in Lahore</a></li>
+                    <li><a href="{{ url_for('doctors_list', city='Karachi') }}">Doctors in Karachi</a></li>
+                    <li><a href="{{ url_for('doctors_list', city='Islamabad') }}">Doctors in Islamabad</a></li>
+                    <li><a href="{{ url_for('doctors_list', city='Multan') }}">Doctors in Multan</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Portals & Access</h5>
+                <ul>
+                    <li><a href="{{ url_for('login_view', role='patient') }}">Patient Dashboard</a></li>
+                    <li><a href="{{ url_for('login_view', role='doctor') }}">Doctor Portal</a></li>
+                    <li><a href="{{ url_for('login_view', role='admin') }}">Administrator Console</a></li>
+                    <li><a href="{{ url_for('register_view', role='doctor') }}">Register Practice</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div>
+                © {{ current_year }} Online Doctor Appointment Booking System. All Rights Reserved.
+            </div>
+            <div>
+                Database Project • Relational Schema (3NF) • Inspired by Marham.pk
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

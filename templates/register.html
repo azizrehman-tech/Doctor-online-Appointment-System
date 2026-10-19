@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Register Account — Marham Health{% endblock %}
+
+{% block content %}
+<div class="content-wrapper" style="max-width: 600px; padding: 48px 20px;">
+    <div style="background: #FFFFFF; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 36px; box-shadow: var(--shadow-md);">
+        
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div class="logo-badge" style="margin: 0 auto 12px; width: 48px; height: 48px; font-size: 1.6rem;">M</div>
+            <h2 style="font-size: 1.6rem; color: var(--dark); margin-bottom: 4px;">Join Marham Health</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Register as a Patient or Healthcare Practitioner</p>
+        </div>
+
+        <!-- Role Toggle -->
+        <div style="display: flex; background: var(--bg-page); padding: 4px; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 24px;">
+            <a href="{{ url_for('register_view', role='patient') }}" class="btn btn-sm {% if active_role == 'patient' %}btn-primary{% else %}btn-outline{% endif %}" style="flex: 1; text-align: center;">
+                👤 Patient Registration
+            </a>
+            <a href="{{ url_for('register_view', role='doctor') }}" class="btn btn-sm {% if active_role == 'doctor' %}btn-primary{% else %}btn-outline{% endif %}" style="flex: 1; text-align: center;">
+                🩺 Doctor / Clinic Sign Up
+            </a>
+        </div>
+
+        <form method="POST" action="{{ url_for('register_view') }}">
+            <input type="hidden" name="role" value="{{ active_role }}">
+
+            <!-- Common Fields -->
+            <div class="form-group">
+                <label class="form-label">Full Name:</label>
+                <input type="text" name="name" class="form-control" placeholder="{% if active_role == 'doctor' %}Dr. Jane Doe{% else %}Muhammad Ali{% endif %}" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                    <label class="form-label">Email Address:</label>
+                    <input type="email" name="email" class="form-control" placeholder="user@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone Number:</label>
+                    <input type="tel" name="phone" class="form-control" placeholder="+92 3XX XXXXXXX" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password:</label>
+                <input type="password" name="password" class="form-control" placeholder="Minimum 8 characters" required>
+            </div>
+
+            <!-- Patient Specific Fields -->
+            {% if active_role == 'patient' %}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth:</label>
+                        <input type="date" name="date_of_birth" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Gender:</label>
+                        <select name="gender" class="form-control">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Home Address:</label>
+                    <input type="text" name="address" class="form-control" placeholder="City, Area, House No.">
+                </div>
+            {% endif %}
+
+            <!-- Doctor Specific Fields -->
+            {% if active_role == 'doctor' %}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="form-group">
+                        <label class="form-label">PMDC / PMC License No:</label>
+                        <input type="text" name="license_no" class="form-control" placeholder="PMDC-XXXXX-P" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Primary Speciality:</label>
+                        <select name="specialization_id" class="form-control" required>
+                            {% for s in specialties %}
+                                <option value="{{ s.specialization_id }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Qualifications & Degrees:</label>
+                    <input type="text" name="qualification" class="form-control" placeholder="e.g. MBBS, FCPS (Dermatology), MD" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Professional Biography & Experience:</label>
+                    <textarea name="bio" class="form-control" rows="2" placeholder="Describe your clinical training, years of hospital practice, and medical focus areas..."></textarea>
+                </div>
+
+                <div style="background: #FEF3C7; border: 1px solid #FCD34D; border-radius: var(--radius-sm); padding: 12px; font-size: 0.82rem; color: #92400E; margin-bottom: 16px;">
+                    ℹ️ <strong>PMDC Verification:</strong> Doctor accounts require administrative review and verification before public listing.
+                </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-accent btn-lg" style="width: 100%; margin-top: 8px;">
+                Complete Registration
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 0.88rem; color: var(--text-muted);">
+            Already have an account? 
+            <a href="{{ url_for('login_view', role=active_role) }}" style="font-weight: 600; color: var(--primary);">Sign In</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

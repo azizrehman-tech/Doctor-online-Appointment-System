@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Administrator Console — Marham Health{% endblock %}
+
+{% block content %}
+<div class="portal-container">
+    <!-- Sidebar -->
+    <aside class="portal-sidebar">
+        <div class="user-profile-summary">
+            <div class="profile-avatar-circle" style="background: linear-gradient(135deg, #1E293B, #0F172A);">⚙️</div>
+            <h3 style="font-size: 1.15rem; margin-bottom: 2px;">{{ logged_user.name }}</h3>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">{{ logged_user.email }}</div>
+            <span class="badge" style="background: #FEE2E2; color: #991B1B; font-weight: 700;">System Administrator</span>
+        </div>
+
+        <ul class="portal-nav">
+            <li><a href="#stats" class="active">📊 Overview & Reports</a></li>
+            <li><a href="#approvals">🛡️ Doctor Verifications</a></li>
+            <li><a href="#specialties">🏷️ Specializations</a></li>
+            <li><a href="#appointments">🗓️ Master Appointments</a></li>
+            <li><a href="{{ url_for('logout') }}" style="color: var(--accent);">🚪 Sign Out</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="portal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+                <h2 style="font-size: 1.5rem; color: var(--dark);">Administrator Command Center</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Relational database records, doctor PMDC credential verification, and system analytics</p>
+            </div>
+            <span class="badge" style="background: #D1FAE5; color: #065F46; padding: 6px 12px; font-size: 0.82rem;">
+                🟢 SQL Server: DoctorAppointmentDB Active
+            </span>
+        </div>
+
+        <!-- KPI Stats -->
+        <div class="stat-grid" id="stats">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #EFF6FF; color: #2563EB;">👨‍⚕️</div>
+                <div>
+                    <div class="stat-val">{{ stats.total_doctors }}</div>
+                    <div class="stat-lbl">Approved Doctors</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #FEF3C7; color: #D97706;">⏳</div>
+                <div>
+                    <div class="stat-val">{{ stats.pending_doctors }}</div>
+                    <div class="stat-lbl">Pending Approvals</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #ECFDF5; color: #059669;">👥</div>
+                <div>
+                    <div class="stat-val">{{ stats.total_patients }}</div>
+                    <div class="stat-lbl">Registered Patients</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #FDF2F4; color: #E11D48;">📋</div>
+                <div>
+                    <div class="stat-val">{{ stats.total_appointments }}</div>
+                    <div class="stat-lbl">Total Appointments</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 1: Doctor Verification & Approvals Queue -->
+        <section id="approvals" style="margin-bottom: 36px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                <h3 style="font-size: 1.25rem; color: var(--dark);">Doctor Registration Verification Queue</h3>
+                <span class="badge badge-pending">{{ stats.pending_list|length }} Pending</span>
+            </div>
+
+            {% if stats.pending_list %}
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Doctor Details</th>
+                                <th>PMDC License</th>
+                                <th>Specialization</th>
+                                <th>Qualification</th>
+                                <th>Application Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in stats.pending_list %}
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 700; color: var(--primary);">{{ doc.name }}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-muted);">{{ doc.email }} • {{ doc.phone }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-pmdc">{{ doc.license_no }}</span>
+                                    </td>
+                                    <td>{{ doc.specialization_name }}</td>
+                                    <td style="font-size: 0.85rem;">{{ doc.qualification }}</td>
+                                    <td style="font-size: 0.82rem; color: var(--text-muted);">{{ doc.created_at[:10] }}</td>
+                                    <td>
+                                        <div style="display: flex; gap: 6px;">
+                                            <button type="button" class="btn btn-primary btn-sm" style="background: #10B981; border-color: #10B981;"
+                                                    onclick="handleDoctorStatus({{ doc.doctor_id }}, 'Approved')">
+                                                Approve
+                                            </button>
+                                            <button type="button" class="btn btn-outline btn-sm" style="color: #EF4444; border-color: #FCA5A5;"
+                                                    onclick="handleDoctorStatus({{ doc.doctor_id }}, 'Rejected')">
+                                                Reject
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div style="padding: 24px; background: #F8FAFC; border-radius: 8px; text-align: center; color: var(--text-muted);">
+                    ✓ All registered doctor profiles have been reviewed and verified.
+                </div>
+            {% endif %}
+        </section>
+
+        <!-- Section 2: Specialization Management -->
+        <section id="specialties" style="margin-bottom: 36px; padding-top: 20px; border-top: 1px solid var(--border);">
+            <h3 style="font-size: 1.25rem; margin-bottom: 14px; color: var(--dark);">Medical Specializations Catalog</h3>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;">
+                {% for sp in specialties %}
+                    <span class="badge" style="background: var(--bg-page); border: 1px solid var(--border); padding: 6px 12px; font-size: 0.85rem; color: var(--text-main);">
+                        {{ sp.name }}
+                    </span>
+                {% endfor %}
+            </div>
+
+            <!-- Add Specialization Form -->
+            <div style="background: #F8FAFC; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px;">
+                <h4 style="font-size: 1rem; margin-bottom: 12px; color: var(--primary);">+ Create New Medical Specialization</h4>
+                <form id="add-specialty-form" onsubmit="submitNewSpecialty(event)" style="display: grid; grid-template-columns: 240px 1fr auto; gap: 12px; align-items: flex-end;">
+                    <div>
+                        <label class="form-label">Specialization Name:</label>
+                        <input type="text" name="name" class="form-control" placeholder="e.g. Pulmonologist" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Description:</label>
+                        <input type="text" name="description" class="form-control" placeholder="Medical scope and clinical description">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm" style="height: 42px;">Add Specialization</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Section 3: Master Appointments Audit Trail -->
+        <section id="appointments" style="padding-top: 20px; border-top: 1px solid var(--border);">
+            <h3 style="font-size: 1.25rem; margin-bottom: 14px; color: var(--dark);">System-Wide Recent Appointments</h3>
+            
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Specialization</th>
+                            <th>Slot Date & Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in stats.recent_appointments %}
+                            <tr>
+                                <td><strong>#{{ a.appointment_id }}</strong></td>
+                                <td>{{ a.patient_name }}</td>
+                                <td><strong>{{ a.doctor_name }}</strong></td>
+                                <td><small class="badge" style="background:#EFF6FF; color:#1D4ED8;">{{ a.specialization_name }}</small></td>
+                                <td>{{ a.slot_date }} ({{ a.start_time[:5] }})</td>
+                                <td>
+                                    {% if a.status == 'Confirmed' %}
+                                        <span class="badge badge-available">Confirmed</span>
+                                    {% elif a.status == 'Cancelled' %}
+                                        <span class="badge badge-danger">Cancelled</span>
+                                    {% else %}
+                                        <span class="badge badge-pending">{{ a.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function submitNewSpecialty(e) {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(e.target));
+    const res = await fetch("/api/admin/specialization/add", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    alert(result.message);
+    if(result.success) location.reload();
+}
+</script>
+{% endblock %}

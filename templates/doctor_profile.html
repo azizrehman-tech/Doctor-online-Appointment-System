@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Dr. {{ doctor.name }} — {{ doctor.specialization_name }} | Marham Health{% endblock %}
+
+{% block content %}
+<div class="content-wrapper" style="padding-top: 32px;">
+    <!-- Doctor Profile Card -->
+    <div style="background: #FFFFFF; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-sm); margin-bottom: 32px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+            <div style="width: 100px; height: 100px; border-radius: var(--radius-md); background: linear-gradient(135deg, #014E78, #0284C7); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 3rem; flex-shrink: 0;">
+                👨‍⚕️
+            </div>
+            <div style="flex: 1; min-width: 280px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <span class="badge badge-pmdc">✓ Verified PMDC: {{ doctor.license_no }}</span>
+                    <span class="badge badge-available">🟢 Available for Appointments</span>
+                </div>
+                <h1 style="font-size: 1.8rem; margin-bottom: 4px; color: var(--dark);">{{ doctor.name }}</h1>
+                <div style="color: var(--primary); font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;">
+                    {{ doctor.specialization_name }}
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 16px;">
+                    {{ doctor.qualification }}
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 0.9rem; padding: 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+                    <div><strong>⭐ Rating:</strong> 4.9/5 (180+ Patients)</div>
+                    <div><strong>🕒 Experience:</strong> 12+ Years</div>
+                    <div><strong>💰 Fee:</strong> Rs. 2,500</div>
+                    <div><strong>📞 Contact:</strong> {{ doctor.phone or 'Via Clinic' }}</div>
+                </div>
+
+                {% if doctor.bio %}
+                    <div style="margin-top: 16px;">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 4px; color: var(--dark);">About Practitioner:</h4>
+                        <p style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.6;">{{ doctor.bio }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout: Locations & Available Booking Slots -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 28px;">
+        <!-- Left: Hospital / Clinic Locations -->
+        <div>
+            <h3 style="font-size: 1.3rem; margin-bottom: 16px; color: var(--dark);">Practicing Hospital & Clinic Locations</h3>
+            {% if doctor.locations %}
+                {% for loc in doctor.locations %}
+                    <div style="background: #FFFFFF; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <h4 style="font-size: 1.1rem; color: var(--primary);">🏥 {{ loc.location_name }}</h4>
+                            <span class="badge" style="background: #F1F5F9; color: var(--text-main); font-weight: 700;">{{ loc.city }}</span>
+                        </div>
+                        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 8px;">
+                            📍 {{ loc.address }}, {{ loc.state or '' }}, {{ loc.country }}
+                        </p>
+                        {% if loc.contact_no %}
+                            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                                📞 Clinic Phone: <strong>{{ loc.contact_no }}</strong>
+                            </div>
+                        {% endif %}
+
+                        <!-- Weekly Schedules -->
+                        {% if loc.schedules %}
+                            <div style="background: #F8FAFC; border-radius: 6px; padding: 10px; font-size: 0.85rem;">
+                                <div style="font-weight: 700; color: var(--dark); margin-bottom: 6px;">Consultation Hours:</div>
+                                {% for sch in loc.schedules %}
+                                    <div style="display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed #E2E8F0;">
+                                        <span>{{ sch.day_of_week }}:</span>
+                                        <strong>{{ sch.start_time[:5] }} - {{ sch.end_time[:5] }} ({{ sch.slot_duration }}m slots)</strong>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div style="margin-top: 14px; text-align: right;">
+                            <button type="button" class="btn btn-accent btn-sm"
+                                    onclick="openBookingModal({{ doctor.doctor_id }}, '{{ doctor.name|replace("'", "\\'") }}', '{{ doctor.specialization_name }}', {{ loc.doctor_location_id }}, '{{ loc.location_name|replace("'", "\\'") }}')">
+                                Book at this Location →
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div style="background: #FFFFFF; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 24px; color: var(--text-muted);">
+                    No practice locations recorded yet.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Right: Time Slot Reservation Picker -->
+        <div>
+            <div style="background: #FFFFFF; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 24px; box-shadow: var(--shadow-sm); position: sticky; top: 90px;">
+                <h3 style="font-size: 1.3rem; margin-bottom: 8px; color: var(--dark);">Book An Appointment</h3>
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 20px;">
+                    Select an appointment date to view live available slots:
+                </p>
+
+                <!-- Date Change Form -->
+                <form method="GET" style="margin-bottom: 20px;">
+                    <label class="form-label">Consultation Date:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="date" name="date" class="form-control" value="{{ selected_date }}" min="{{ current_date }}" onchange="this.form.submit()">
+                        <button type="submit" class="btn btn-primary btn-sm">Check Slots</button>
+                    </div>
+                </form>
+
+                <div style="margin-bottom: 12px; font-weight: 700; font-size: 0.92rem; color: var(--dark);">
+                    Available Slots on {{ selected_date }}:
+                </div>
+
+                {% if slots %}
+                    <div class="slots-grid" style="max-height: 280px;">
+                        {% for sl in slots %}
+                            <div class="slot-item {% if sl.slot_status != 'Available' %}booked{% endif %}"
+                                 onclick="openBookingModal({{ doctor.doctor_id }}, '{{ doctor.name|replace("'", "\\'") }}', '{{ doctor.specialization_name }}', {{ sl.doctor_location_id or 0 }}, '{{ (sl.location_name or "")|replace("'", "\\'") }}')">
+                                <span>{{ sl.start_time[:5] }}</span>
+                                <small style="display:block; font-size: 0.72rem; color: var(--text-muted);">{{ sl.location_name }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div style="margin-top: 18px;">
+                        <button type="button" class="btn btn-accent btn-lg" style="width: 100%;"
+                                onclick="openBookingModal({{ doctor.doctor_id }}, '{{ doctor.name|replace("'", "\\'") }}', '{{ doctor.specialization_name }}', {{ doctor.locations[0].doctor_location_id if doctor.locations else 0 }}, '{{ doctor.locations[0].location_name if doctor.locations else '' }}')">
+                            Instant Booking Modal
+                        </button>
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 32px 14px; background: #F8FAFC; border-radius: var(--radius-sm); border: 1px dashed var(--border);">
+                        <div style="font-size: 1.8rem; margin-bottom: 8px;">📅</div>
+                        <div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px;">No Available Slots on This Date</div>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Try choosing another day or contact the clinic helpline.</p>
+                    </div>
+                {% endif %}
+
+                <!-- Guarantee Box -->
+                <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 8px;">
+                    <div>✓ Free cancellation up to 2 hours before appointment</div>
+                    <div>✓ No booking fees or hidden charges</div>
+                    <div>✓ Immediate SMS & Email confirmation</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
